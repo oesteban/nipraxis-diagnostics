@@ -6,6 +6,7 @@ Run as:
 """
 
 import os
+from pathlib import Path
 import sys
 import hashlib
 
@@ -23,9 +24,11 @@ def file_hash(filename):
     hash : str
         SHA1 hexadecimal hash string for contents of `filename`.
     """
+    return hashlib.sha1(
+        Path(filename).read_bytes()
+    ).hexdigest()
     # Open the file, read contents as bytes.
     # Calculate, return SHA1 has on the bytes from the file.
-    raise RuntimeError('No code yet')
 
 
 def validate_data(data_directory):
@@ -46,12 +49,20 @@ def validate_data(data_directory):
         If hash value for any file is different from hash value recorded in
         ``data_hashes.txt`` file.
     """
+    data_directory = Path(data_directory)
+
     # Read lines from ``data_hashes.txt`` file.
+    lines = (data_directory / "hash_list.txt").read_text().splitlines()
+
     # Split into SHA1 hash and filename
+    hash_and_file = [l.split(" ") for l in lines]
+
     # Calculate actual hash for given filename.
-    # If hash for filename is not the same as the one in the file, raise
-    # ValueError
-    raise RuntimeError("No code yet")
+    for hashdigest, filename in hash_and_file:
+        filename = filename.replace("group-00/", "")
+        target_hash = file_hash(str(data_directory / filename))
+        if hashdigest != target_hash:
+            raise ValueError(f"File {filename} is corrupted ({hashdigest} vs. {target_hash}).")
 
 
 def main():
@@ -61,6 +72,7 @@ def main():
     if len(sys.argv) < 2:
         raise RuntimeError("Please give data directory on "
                            "command line")
+
     data_directory = sys.argv[1]
     # Call function to validate data in data directory
     validate_data(data_directory)
